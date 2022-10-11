@@ -1,5 +1,8 @@
 {
   "compilerOptions": {
+    "outDir": "./dist",
+    // outputs .d.ts files
+    "declaration": true,
     /* Visit https://aka.ms/tsconfig.json to read more about this file */
     /* Projects */
     // "incremental": true,                              /* Enable incremental compilation */
@@ -91,5 +94,6 @@
     /* Completeness */
     // "skipDefaultLibCheck": true,                      /* Skip type checking .d.ts files that are included with TypeScript. */
     "skipLibCheck": true /* Skip type checking all .d.ts files. */
-  }
+  },
+  "include": ["src/**/*"]
 }
