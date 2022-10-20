@@ -13,7 +13,7 @@ const main = async () => {
     console.log(auth_tokens);
 
     // Initialize TzSign
-    const tzSign = new TzSign(wallet, api, wallet.contract.at('KT1Bzxs2ubi8dD6C1o51ATX6gwJJMxLQKT6s'));
+    const tzSign = new TzSign(wallet, api, await wallet.contract.at('KT1Bzxs2ubi8dD6C1o51ATX6gwJJMxLQKT6s'));
 
     // Deploy Multisig contract
     const multisig = await tzSign.createMultiSig(
