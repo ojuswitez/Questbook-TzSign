@@ -1,6 +1,6 @@
 import axios, { Axios } from "axios";
 import { TezosToolkit } from "@taquito/taquito"
-import { TransferXTZ, TransferFA1_2 as TransferFA1_2 } from "./types"
+import { TransferXTZ, TransferFA1_2, TransferFA2 } from "./types"
 
 
 export class TzSignAPI {
@@ -65,7 +65,7 @@ export class TzSignAPI {
         return await this.tzktApi.get(`/contracts/${contractAddress}/storage`);
     }
 
-    async createOperation(params: TransferXTZ | TransferFA1_2) {
+    async createOperation(params: TransferXTZ | TransferFA1_2 | TransferFA2) {
         try {
             const resTx = await this.tzSignApi.post(
                 `/${this.network}/contract/operation`,

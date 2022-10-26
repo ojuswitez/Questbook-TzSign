@@ -37,7 +37,11 @@ const main = async (tests: string[]) => {
     }
 
     let tx: any;
-    if (tests.includes('XTZTransaction') || tests.includes('createFA1_2Transaction')) {
+    if (
+        tests.includes('XTZTransaction') ||
+        tests.includes('createFA1_2Transaction') ||
+        tests.includes('createFA2Transaction')
+    ) {
         if (tests.includes('XTZTransaction')) {
             tx = await tzSign.createXTZTransaction(1, 'tz1burnburnburnburnburnburnburjAYjjX');
             console.log(tx);
@@ -49,6 +53,19 @@ const main = async (tests: string[]) => {
                     {
                         "to": "tz1burnburnburnburnburnburnburjAYjjX",
                         "amount": 1
+                    }
+                ]
+            );
+            console.log(tx);
+        }
+        else if (tests.includes('createFA2Transaction')) {
+            tx = await tzSign.createFA2Transaction(
+                'KT1Uw1oio434UoWFuZTNKFgt5wTM9tfuf7m7',
+                [
+                    {
+                        "to": "tz1burnburnburnburnburnburnburjAYjjX",
+                        "amount": 1,
+                        "token_id": 6
                     }
                 ]
             );
@@ -76,6 +93,7 @@ try {
         // 'isOwner',
         // 'XTZTransaction',
         // 'createFA1_2Transaction',
+        // 'createFA2Transaction',
         // 'getTransactionHashStatus',
     ]);
 } catch (e) {

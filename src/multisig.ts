@@ -115,6 +115,29 @@ export class TzSign {
         }
     }
 
+    public async createFA2Transaction(
+        tokenAddress: string,
+        txs: {
+            to: string,
+            amount: number,
+            token_id: number
+        }[],
+        contractAddress: string = this.contract?.address!
+    ) {
+        try {
+            const tx = await this.api.createOperation({
+                type: "fa2_transfer",
+                contract_id: contractAddress,
+                asset_id: tokenAddress,
+                transfer_list: [{ txs }]
+            });
+            this.latestTxId = tx.operation_id;
+            return tx;
+        } catch (e) {
+            console.log(e);
+        }
+    }
+
     public async getTransactionHashStatus(
         transactionHash: string,
         contractAddress: string | undefined = this.contract?.address
@@ -166,7 +189,6 @@ export class TzSign {
             }).send();
             await tx.confirmation();
             return tx;
-
         } catch (e) {
             console.log(e);
         }

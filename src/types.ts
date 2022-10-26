@@ -17,3 +17,17 @@ export interface TransferFA1_2 {
         }[]
     }[]
 }
+
+
+export interface TransferFA2 {
+    type: "fa2_transfer",
+    asset_id: string,
+    contract_id: string,
+    transfer_list: {
+        txs: {
+            token_id: number,
+            amount: number,
+            to: string
+        }[]
+    }[]
+}
