@@ -64,10 +64,37 @@ export class TzSign {
     public async createXTZTransaction(
         amount: number,
         destination: string,
-        contractAddress: string | undefined = this.contract?.address
+        contractAddress: string = this.contract?.address!
     ) {
         try {
-            const tx = await this.api.createOperationXTZ(contractAddress!, amount, destination);
+            const tx = await this.api.createOperation({
+                type: "transfer",
+                contract_id: contractAddress!,
+                amount: amount,
+                to: destination
+            });
+            this.latestTxId = tx.operation_id;
+            return tx;
+        } catch (e) {
+            console.log(e);
+        }
+    }
+
+    public async createFA1_2Transaction(
+        tokenAddress: string,
+        txs: {
+            to: string,
+            amount: number
+        }[],
+        contractAddress: string = this.contract?.address!
+    ) {
+        try {
+            const tx = await this.api.createOperation({
+                type: "fa_transfer",
+                contract_id: contractAddress,
+                asset_id: tokenAddress,
+                transfer_list: [{ txs }]
+            });
             this.latestTxId = tx.operation_id;
             return tx;
         } catch (e) {

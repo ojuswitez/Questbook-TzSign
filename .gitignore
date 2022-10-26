@@ -1,5 +1,6 @@
 .vscode/
 node_modules/
+example/test.ts
 .env
 dist
 package-lock.json
