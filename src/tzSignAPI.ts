@@ -30,35 +30,30 @@ export class TzSignAPI {
     };
 
     async auth(wallet: TezosToolkit) {
-        try {
-            const signer = wallet.signer
-            const publicKey = await signer.publicKey();
+        const signer = wallet.signer
+        const publicKey = await signer.publicKey();
 
-            const payload = await this.tzSignApi.post(`/${this.network}/auth/request`, {
-                "pub_key": publicKey
-            })
-            const { token } = payload.data;
-            const tokenBytes = Buffer.from(token, 'utf8').toString('hex');
-            const tokenBytesLen = Buffer.from(`${tokenBytes.length}`, 'utf8').toString('hex');
-            const signPayload = `050100${tokenBytesLen}${tokenBytes}`;
+        const payload = await this.tzSignApi.post(`/${this.network}/auth/request`, {
+            "pub_key": publicKey
+        })
+        const { token } = payload.data;
+        const tokenBytes = Buffer.from(token, 'utf8').toString('hex');
+        const tokenBytesLen = Buffer.from(`${tokenBytes.length}`, 'utf8').toString('hex');
+        const signPayload = `050100${tokenBytesLen}${tokenBytes}`;
 
-            const signature = await signer.sign(signPayload);
+        const signature = await signer.sign(signPayload);
 
-            const resTokens = await this.tzSignApi.post(`/${this.network}/auth`, {
-                pub_key: publicKey,
-                payload: token,
-                signature: signature.prefixSig,
-            });
-            this.access_token = resTokens.data.access_token;
-            this.refresh_token = resTokens.data.refresh_token;
-            return {
-                access_token: this.access_token,
-                refresh_token: this.refresh_token
-            };
-
-        } catch (e) {
-            console.log(e);
-        }
+        const resTokens = await this.tzSignApi.post(`/${this.network}/auth`, {
+            pub_key: publicKey,
+            payload: token,
+            signature: signature.prefixSig,
+        });
+        this.access_token = resTokens.data.access_token;
+        this.refresh_token = resTokens.data.refresh_token;
+        return {
+            access_token: this.access_token,
+            refresh_token: this.refresh_token
+        };
     }
 
     async getInitStorage(contractAddress: string) {
@@ -66,49 +61,36 @@ export class TzSignAPI {
     }
 
     async createOperation(params: TransferXTZ | TransferFA1_2 | TransferFA2) {
-        try {
-            const resTx = await this.tzSignApi.post(
-                `/${this.network}/contract/operation`,
-                params,
-                { headers: { Authorization: `Bearer ${this.access_token}` } }
-            );
-            return resTx.data;
-        } catch (e) {
-            console.log(e);
-        }
+        const resTx = await this.tzSignApi.post(
+            `/${this.network}/contract/operation`,
+            params,
+            { headers: { Authorization: `Bearer ${this.access_token}` } }
+        );
+        return resTx.data;
     }
 
     async getOperations(contract_id: string) {
         let ops: Array<any> = [];
         let page = [];
         let offset = 0;
-        try {
-            do {
-                const resOps = await this.tzSignApi.get(
-                    `${this.network}/contract/${contract_id}/operations?limit=500&offset=${offset}`,
-                    { headers: { Authorization: `Bearer ${this.access_token}` } }
-                );
-                page = resOps.data;
-                ops = ops.concat(page);
-                offset += page.length;
-            } while (page.length != 0);
-        } catch (e) {
-            console.log(e);
-        }
+        do {
+            const resOps = await this.tzSignApi.get(
+                `${this.network}/contract/${contract_id}/operations?limit=500&offset=${offset}`,
+                { headers: { Authorization: `Bearer ${this.access_token}` } }
+            );
+            page = resOps.data;
+            ops = ops.concat(page);
+            offset += page.length;
+        } while (page.length != 0);
         return ops;
     }
 
     async getOperationPayload(operation_id: string, type: "approve" | "reject") {
-        try {
-            const payload = await this.tzSignApi.get(
-                `/${this.network}/contract/operation/${operation_id}/payload?type=${type}`,
-                { headers: { Authorization: `Bearer ${this.access_token}` } }
-            );
-            return payload.data;
-
-        } catch (e) {
-            console.log(e);
-        }
+        const payload = await this.tzSignApi.get(
+            `/${this.network}/contract/operation/${operation_id}/payload?type=${type}`,
+            { headers: { Authorization: `Bearer ${this.access_token}` } }
+        );
+        return payload.data;
     }
 
     async saveOperationSignature(
@@ -118,30 +100,20 @@ export class TzSignAPI {
         signature: string,
         type: string
     ) {
-        try {
-            const res = await this.tzSignApi.post(`/${this.network}/contract/operation/${operation_id}/signature`, {
-                contract_id: contract_id,
-                pub_key: pub_key,
-                signature: signature,
-                type: type
-            }, { headers: { Authorization: `Bearer ${this.access_token}` } });
-            return res.data;
-
-        } catch (e) {
-            console.log(e);
-        }
+        const res = await this.tzSignApi.post(`/${this.network}/contract/operation/${operation_id}/signature`, {
+            contract_id: contract_id,
+            pub_key: pub_key,
+            signature: signature,
+            type: type
+        }, { headers: { Authorization: `Bearer ${this.access_token}` } });
+        return res.data;
     }
 
     async getSignedOperation(type: "approve" | "reject", operation_id: string) {
-        try {
-            const res = await this.tzSignApi.get(
-                `/${this.network}/contract/operation/${operation_id}/build?type=${type}`, {
-                headers: { Authorization: `Bearer ${this.access_token}` }
-            });
-            return res.data;
-
-        } catch (e) {
-            console.log(e);
-        }
+        const res = await this.tzSignApi.get(
+            `/${this.network}/contract/operation/${operation_id}/build?type=${type}`, {
+            headers: { Authorization: `Bearer ${this.access_token}` }
+        });
+        return res.data;
     }
 }
