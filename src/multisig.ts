@@ -1,4 +1,6 @@
+import { hash } from '@stablelib/blake2b';
 import { DefaultContractType, Signer, TezosToolkit } from '@taquito/taquito';
+import { b58cdecode, b58cencode, prefix } from '@taquito/utils';
 import { TzSignAPI } from './tzSignAPI';
 
 
@@ -53,8 +55,19 @@ export class TzSign {
     public async isOwner(address: string, contractAddress: string | undefined = this.contract?.address) {
         try {
             const res = await this.api.getInitStorage(contractAddress!);
-            const owners: Array<any> = res.data.owners;
-            return owners.map((owner: any) => owner.address).includes(address);
+            const ownerPublicKeys = res.data.keys;
+            const ownerAddresses = ownerPublicKeys.map((pk: string) => {
+                if (pk.startsWith("edpk")) {
+                    const pkBytes = b58cdecode(pk, prefix.edpk);
+                    return b58cencode(hash(new Uint8Array(pkBytes), 20), prefix.tz1);
+                } else if (pk.startsWith("sppk")) {
+                    const pkBytes = b58cdecode(pk, prefix.sppk);
+                    return b58cencode(hash(new Uint8Array(pkBytes), 20), prefix.tz2);
+                } else {
+                    throw new Error("Owner public key not supported");
+                }
+            });
+            return ownerAddresses.includes(address);
         } catch (e) {
             console.log(e);
             return false;
