@@ -1,19 +1,11 @@
 import * as dotenv from 'dotenv'
 import { TzSign } from '../src/multisig';
-import { TzSignAPI } from '../src/tzSignAPI';
 import { initWallet } from '../src/wallet';
 
 
 const main = async (tests: string[]) => {
     const wallet = await initWallet();
-    const api = new TzSignAPI();
-
-    // Authenticate from TzSign API
-    const auth_tokens = await api.auth(wallet);
-    console.log(auth_tokens);
-
-    // Initialize TzSign
-    const tzSign = new TzSign(wallet, api, await wallet.contract.at('KT1Bzxs2ubi8dD6C1o51ATX6gwJJMxLQKT6s'));
+    const tzSign = new TzSign(wallet, await wallet.contract.at('KT1Bzxs2ubi8dD6C1o51ATX6gwJJMxLQKT6s'));
 
     if (tests.includes('newMultiSig')) {
         const multisig = await tzSign.createMultiSig(
@@ -88,9 +80,9 @@ const main = async (tests: string[]) => {
 try {
     dotenv.config();
     main([
-        // 'newMultiSig',
-        // 'isValidSafeAddress',
-        // 'isOwner',
+        'newMultiSig',
+        'isValidSafeAddress',
+        'isOwner',
         // 'XTZTransaction',
         // 'createFA1_2Transaction',
         // 'createFA2Transaction',

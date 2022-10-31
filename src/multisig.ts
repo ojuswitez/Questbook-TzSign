@@ -6,14 +6,20 @@ import { TzSignAPI } from './tzSignAPI';
 
 export class TzSign {
     private tezos: TezosToolkit;
-    private api: TzSignAPI;
+    private api: TzSignAPI | undefined;
     private contract: DefaultContractType | undefined;
     private latestTxId: string | undefined;
 
-    constructor(tezos: TezosToolkit, api: TzSignAPI, contract?: any) {
+    constructor(tezos: TezosToolkit, contract?: any) {
         this.tezos = tezos;
-        this.api = api;
         this.contract = contract;
+    }
+
+    private async checkAPI() {
+        if (!this.api) {
+            this.api = new TzSignAPI();
+            await this.api.auth(this.tezos);
+        }
     }
 
     public async createMultiSig(
@@ -21,7 +27,9 @@ export class TzSign {
         threshold: string,
         balance: number = 0
     ) {
-        const resCode = await this.api.getContractCode();
+        this.checkAPI();
+
+        const resCode = await this.api!.getContractCode();
         const code = resCode.data;
 
         const origination = await this.tezos.contract.originate({
@@ -39,12 +47,16 @@ export class TzSign {
     }
 
     public async isValidSafeAddress(contractAddress: string | undefined = this.contract?.address) {
-        const res = await this.api.getInitStorage(contractAddress!);
+        this.checkAPI();
+
+        const res = await this.api!.getInitStorage(contractAddress!);
         return res.status === 200;
     }
 
     public async isOwner(address: string, contractAddress: string | undefined = this.contract?.address) {
-        const res = await this.api.getInitStorage(contractAddress!);
+        this.checkAPI();
+
+        const res = await this.api!.getInitStorage(contractAddress!);
         const ownerPublicKeys = res.data.keys;
         const ownerAddresses = ownerPublicKeys.map((pk: string) => {
             if (pk.startsWith("edpk")) {
@@ -65,7 +77,9 @@ export class TzSign {
         destination: string,
         contractAddress: string = this.contract?.address!
     ) {
-        const tx = await this.api.createOperation({
+        this.checkAPI();
+
+        const tx = await this.api!.createOperation({
             type: "transfer",
             contract_id: contractAddress!,
             amount: amount,
@@ -83,7 +97,9 @@ export class TzSign {
         }[],
         contractAddress: string = this.contract?.address!
     ) {
-        const tx = await this.api.createOperation({
+        this.checkAPI();
+
+        const tx = await this.api!.createOperation({
             type: "fa_transfer",
             contract_id: contractAddress,
             asset_id: tokenAddress,
@@ -102,7 +118,9 @@ export class TzSign {
         }[],
         contractAddress: string = this.contract?.address!
     ) {
-        const tx = await this.api.createOperation({
+        this.checkAPI();
+
+        const tx = await this.api!.createOperation({
             type: "fa2_transfer",
             contract_id: contractAddress,
             asset_id: tokenAddress,
@@ -116,7 +134,9 @@ export class TzSign {
         transactionHash: string,
         contractAddress: string | undefined = this.contract?.address
     ) {
-        const txs = await this.api.getOperations(contractAddress!);
+        this.checkAPI();
+
+        const txs = await this.api!.getOperations(contractAddress!);
         return txs.find((tx: any) => tx.operation_id === transactionHash);
     }
 
@@ -126,9 +146,11 @@ export class TzSign {
         txId: string = this.latestTxId!,
         signer: Signer = this.tezos.signer
     ) {
-        const payloadRes = await this.api.getOperationPayload(txId, type);
+        this.checkAPI();
+
+        const payloadRes = await this.api!.getOperationPayload(txId, type);
         const signature = (await signer.sign(payloadRes.payload, new Uint8Array())).prefixSig;
-        const signedRes = await this.api.saveOperationSignature(
+        const signedRes = await this.api!.saveOperationSignature(
             contractAddress!,
             txId,
             await signer.publicKey(),
@@ -143,7 +165,9 @@ export class TzSign {
         txId: string = this.latestTxId!,
         contractAddress: string | undefined = this.contract?.address,
     ) {
-        let resTx = await this.api.getSignedOperation(type, txId);
+        this.checkAPI();
+
+        let resTx = await this.api!.getSignedOperation(type, txId);
         resTx.value = JSON.parse(resTx.value);
         const tx = await this.tezos.wallet.transfer({
             to: contractAddress!,
