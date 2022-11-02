@@ -1,13 +1,24 @@
+import { TezosToolkit } from '@taquito/taquito';
 import * as dotenv from 'dotenv'
 import { TzSign } from '../src/multisig';
-import { initWallet } from '../src/wallet';
+import { initWallet } from './wallet';
 
 
-const main = async (tests: string[]) => {
-    const wallet = await initWallet();
-    const tzSign = new TzSign(wallet, await wallet.contract.at('KT1Bzxs2ubi8dD6C1o51ATX6gwJJMxLQKT6s'));
+export const testCases = [
+    'newMultiSig',
+    'isValidSafeAddress',
+    'isOwner',
+    // 'XTZTransaction',
+    // 'createFA1_2Transaction',
+    // 'createFA2Transaction',
+    // 'getTransactionHashStatus',
+]
 
-    if (tests.includes('newMultiSig')) {
+
+export const tests = async (tezos: TezosToolkit, testCases: string[]) => {
+    const tzSign = new TzSign(tezos, await tezos.contract.at('KT1Bzxs2ubi8dD6C1o51ATX6gwJJMxLQKT6s'));
+
+    if (testCases.includes('newMultiSig')) {
         const multisig = await tzSign.createMultiSig(
             process.env.MULTISIG_OWNERS?.split(',')!,
             process.env.MULTISIG_THRESHOLD!,
@@ -16,29 +27,29 @@ const main = async (tests: string[]) => {
         console.log(multisig);
     }
 
-    if (tests.includes('isValidSafeAddress')) {
+    if (testCases.includes('isValidSafeAddress')) {
         const isValid1 = await tzSign.isValidSafeAddress('KT1Hk6JQ8ZRRvdzjobyfVNsAeSC6PScjfQ8x');
         const isValid2 = await tzSign.isValidSafeAddress('KT1Bzxs2ubi8dD6C1o51ATX6gwJJMxLQKT6s');
         console.log(isValid1, isValid2);
     }
 
-    if (tests.includes('isOwner')) {
+    if (testCases.includes('isOwner')) {
         const isOwner1 = await tzSign.isOwner('tz1burnburnburnburnburnburnburjAYjjX');
-        const isOwner2 = await tzSign.isOwner(await wallet.signer.publicKeyHash());
+        const isOwner2 = await tzSign.isOwner(await tezos.signer.publicKeyHash());
         console.log(isOwner1, isOwner2);
     }
 
     let tx: any;
     if (
-        tests.includes('XTZTransaction') ||
-        tests.includes('createFA1_2Transaction') ||
-        tests.includes('createFA2Transaction')
+        testCases.includes('XTZTransaction') ||
+        testCases.includes('createFA1_2Transaction') ||
+        testCases.includes('createFA2Transaction')
     ) {
-        if (tests.includes('XTZTransaction')) {
+        if (testCases.includes('XTZTransaction')) {
             tx = await tzSign.createXTZTransaction(1, 'tz1burnburnburnburnburnburnburjAYjjX');
             console.log(tx);
         }
-        else if (tests.includes('createFA1_2Transaction')) {
+        else if (testCases.includes('createFA1_2Transaction')) {
             tx = await tzSign.createFA1_2Transaction(
                 'KT1F8Ei743RE8wH4BEdpq2uuqoHgb6jkfuJe',
                 [
@@ -50,7 +61,7 @@ const main = async (tests: string[]) => {
             );
             console.log(tx);
         }
-        else if (tests.includes('createFA2Transaction')) {
+        else if (testCases.includes('createFA2Transaction')) {
             tx = await tzSign.createFA2Transaction(
                 'KT1Uw1oio434UoWFuZTNKFgt5wTM9tfuf7m7',
                 [
@@ -71,23 +82,24 @@ const main = async (tests: string[]) => {
         console.log(finalTx);
 
     }
-    if (tests.includes('getTransactionHashStatus')) {
+    if (testCases.includes('getTransactionHashStatus')) {
         const txInfo = await tzSign.getTransactionHashStatus(tx.operation_id);
         console.log(txInfo);
     }
 }
 
-try {
+
+const main = async () => {
     dotenv.config();
-    main([
-        'newMultiSig',
-        'isValidSafeAddress',
-        'isOwner',
-        // 'XTZTransaction',
-        // 'createFA1_2Transaction',
-        // 'createFA2Transaction',
-        // 'getTransactionHashStatus',
-    ]);
+    tests(
+        await initWallet(),
+        testCases
+    );
+}
+
+
+try {
+    main();
 } catch (e) {
     console.log(e);
 }

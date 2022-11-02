@@ -1,24 +1,25 @@
 import { hash } from '@stablelib/blake2b';
-import { DefaultContractType, Signer, TezosToolkit } from '@taquito/taquito';
+import { BeaconWallet } from '@taquito/beacon-wallet';
+import { DefaultContractType, TezosToolkit } from '@taquito/taquito';
 import { b58cdecode, b58cencode, prefix } from '@taquito/utils';
 import { TzSignAPI } from './tzSignAPI';
 
 
 export class TzSign {
-    private tezos: TezosToolkit;
+    private wallet: TezosToolkit | BeaconWallet;
     private api: TzSignAPI | undefined;
     private contract: DefaultContractType | undefined;
     private latestTxId: string | undefined;
 
-    constructor(tezos: TezosToolkit, contract?: any) {
-        this.tezos = tezos;
+    constructor(wallet: TezosToolkit | BeaconWallet, contract?: any) {
+        this.wallet = wallet;
         this.contract = contract;
     }
 
     private async checkAPI() {
         if (!this.api) {
             this.api = new TzSignAPI();
-            await this.api.auth(this.tezos);
+            await this.api.auth(this.wallet);
         }
     }
 
@@ -27,12 +28,14 @@ export class TzSign {
         threshold: string,
         balance: number = 0
     ) {
-        this.checkAPI();
-
         const resCode = await this.api!.getContractCode();
         const code = resCode.data;
 
-        const origination = await this.tezos.contract.originate({
+        if (this.wallet instanceof BeaconWallet) {
+            throw new Error("Beacon wallet not supported for origination");
+        }
+
+        const origination = await this.wallet.contract.originate({
             code: code,
             storage: {
                 counter: 0,
@@ -47,15 +50,11 @@ export class TzSign {
     }
 
     public async isValidSafeAddress(contractAddress: string | undefined = this.contract?.address) {
-        this.checkAPI();
-
         const res = await this.api!.getInitStorage(contractAddress!);
         return res.status === 200;
     }
 
     public async isOwner(address: string, contractAddress: string | undefined = this.contract?.address) {
-        this.checkAPI();
-
         const res = await this.api!.getInitStorage(contractAddress!);
         const ownerPublicKeys = res.data.keys;
         const ownerAddresses = ownerPublicKeys.map((pk: string) => {
@@ -77,7 +76,7 @@ export class TzSign {
         destination: string,
         contractAddress: string = this.contract?.address!
     ) {
-        this.checkAPI();
+        await this.checkAPI();
 
         const tx = await this.api!.createOperation({
             type: "transfer",
@@ -97,7 +96,7 @@ export class TzSign {
         }[],
         contractAddress: string = this.contract?.address!
     ) {
-        this.checkAPI();
+        await this.checkAPI();
 
         const tx = await this.api!.createOperation({
             type: "fa_transfer",
@@ -118,7 +117,7 @@ export class TzSign {
         }[],
         contractAddress: string = this.contract?.address!
     ) {
-        this.checkAPI();
+        await this.checkAPI();
 
         const tx = await this.api!.createOperation({
             type: "fa2_transfer",
@@ -134,7 +133,7 @@ export class TzSign {
         transactionHash: string,
         contractAddress: string | undefined = this.contract?.address
     ) {
-        this.checkAPI();
+        await this.checkAPI();
 
         const txs = await this.api!.getOperations(contractAddress!);
         return txs.find((tx: any) => tx.operation_id === transactionHash);
@@ -144,16 +143,24 @@ export class TzSign {
         type: "approve" | "reject",
         contractAddress: string | undefined = this.contract?.address,
         txId: string = this.latestTxId!,
-        signer: Signer = this.tezos.signer
+        wallet: TezosToolkit | BeaconWallet = this.wallet
     ) {
-        this.checkAPI();
-
+        await this.checkAPI();
         const payloadRes = await this.api!.getOperationPayload(txId, type);
-        const signature = (await signer.sign(payloadRes.payload, new Uint8Array())).prefixSig;
+
+        const isSigner = wallet instanceof TezosToolkit;
+        const publicKey = isSigner ?
+            await (wallet as TezosToolkit).signer.publicKey() :
+            (await (wallet as BeaconWallet).client.getActiveAccount())!.publicKey;
+
+        const signature = isSigner ?
+            (await (wallet as TezosToolkit).signer.sign(payloadRes.payload)).prefixSig :
+            (await (wallet as BeaconWallet).client.requestSignPayload({ payload: payloadRes.payload })).signature;
+
         const signedRes = await this.api!.saveOperationSignature(
             contractAddress!,
             txId,
-            await signer.publicKey(),
+            publicKey,
             signature,
             type
         );
@@ -165,11 +172,16 @@ export class TzSign {
         txId: string = this.latestTxId!,
         contractAddress: string | undefined = this.contract?.address,
     ) {
-        this.checkAPI();
+        await this.checkAPI();
 
         let resTx = await this.api!.getSignedOperation(type, txId);
         resTx.value = JSON.parse(resTx.value);
-        const tx = await this.tezos.wallet.transfer({
+
+        if (this.wallet instanceof BeaconWallet) {
+            throw new Error("Beacon wallet not supported for sending transactions");
+        }
+
+        const tx = await (this.wallet as TezosToolkit).wallet.transfer({
             to: contractAddress!,
             amount: 0,
             parameter: resTx

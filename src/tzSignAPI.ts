@@ -1,5 +1,6 @@
 import axios, { Axios } from "axios";
 import { TezosToolkit } from "@taquito/taquito"
+import { BeaconWallet } from "@taquito/beacon-wallet"
 import { TransferXTZ, TransferFA1_2, TransferFA2 } from "./types"
 
 
@@ -29,9 +30,12 @@ export class TzSignAPI {
         return this.tzSignApi.get('/static/contract.json');
     };
 
-    async auth(wallet: TezosToolkit) {
-        const signer = wallet.signer
-        const publicKey = await signer.publicKey();
+    async auth(wallet: TezosToolkit | BeaconWallet) {
+        const isSigner = wallet instanceof TezosToolkit;
+
+        const publicKey = isSigner ?
+            await (wallet as TezosToolkit).signer.publicKey() :
+            (await (wallet as BeaconWallet).client.getActiveAccount())!.publicKey;
 
         const payload = await this.tzSignApi.post(`/${this.network}/auth/request`, {
             "pub_key": publicKey
@@ -41,12 +45,14 @@ export class TzSignAPI {
         const tokenBytesLen = Buffer.from(`${tokenBytes.length}`, 'utf8').toString('hex');
         const signPayload = `050100${tokenBytesLen}${tokenBytes}`;
 
-        const signature = await signer.sign(signPayload);
+        const signature = isSigner ?
+            (await (wallet as TezosToolkit).signer.sign(signPayload)).prefixSig :
+            (await (wallet as BeaconWallet).client.requestSignPayload({ payload: signPayload })).signature;
 
         const resTokens = await this.tzSignApi.post(`/${this.network}/auth`, {
             pub_key: publicKey,
             payload: token,
-            signature: signature.prefixSig,
+            signature: signature,
         });
         this.access_token = resTokens.data.access_token;
         this.refresh_token = resTokens.data.refresh_token;
@@ -81,7 +87,7 @@ export class TzSignAPI {
             page = resOps.data;
             ops = ops.concat(page);
             offset += page.length;
-        } while (page.length != 0);
+        } while (page.length !== 0);
         return ops;
     }
 
