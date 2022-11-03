@@ -10,8 +10,10 @@ export class TzSignAPI {
     private readonly network: string;
     private access_token: string | undefined;
     private refresh_token: string | undefined;
+    public authenticated: boolean;
 
     constructor() {
+        this.authenticated = false;
         this.network = process.env.NETWORK!;
         this.tzSignApi = axios.create({
             baseURL: process.env.TZSIGN_API,
@@ -56,6 +58,7 @@ export class TzSignAPI {
         });
         this.access_token = resTokens.data.access_token;
         this.refresh_token = resTokens.data.refresh_token;
+        this.authenticated = true;
         return {
             access_token: this.access_token,
             refresh_token: this.refresh_token

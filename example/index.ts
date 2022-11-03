@@ -5,13 +5,13 @@ import { initWallet } from './wallet';
 
 
 export const testCases = [
-    'newMultiSig',
-    'isValidSafeAddress',
-    'isOwner',
-    // 'XTZTransaction',
+    // 'newMultiSig',
+    // 'isValidSafeAddress',
+    // 'isOwner',
+    'XTZTransaction',
     // 'createFA1_2Transaction',
     // 'createFA2Transaction',
-    // 'getTransactionHashStatus',
+    'getTransactionHashStatus',
 ]
 
 
