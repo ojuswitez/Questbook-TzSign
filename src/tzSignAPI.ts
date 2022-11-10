@@ -1,6 +1,7 @@
 import axios, { Axios } from "axios";
 import { TezosToolkit } from "@taquito/taquito"
 import { BeaconWallet } from "@taquito/beacon-wallet"
+import { SigningType } from "@airgap/beacon-sdk";
 import { TransferXTZ, TransferFA1_2, TransferFA2 } from "./types"
 
 
@@ -49,7 +50,7 @@ export class TzSignAPI {
 
         const signature = isSigner ?
             (await (wallet as TezosToolkit).signer.sign(signPayload)).prefixSig :
-            (await (wallet as BeaconWallet).client.requestSignPayload({ payload: signPayload })).signature;
+            (await (wallet as BeaconWallet).client.requestSignPayload({ payload: signPayload, signingType: SigningType.MICHELINE })).signature;
 
         const resTokens = await this.tzSignApi.post(`/${this.network}/auth`, {
             pub_key: publicKey,

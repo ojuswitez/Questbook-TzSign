@@ -11,7 +11,7 @@ export const testCases = [
     'XTZTransaction',
     // 'createFA1_2Transaction',
     // 'createFA2Transaction',
-    'getTransactionHashStatus',
+    // 'getTransactionHashStatus',
 ]
 
 
